@@ -20,6 +20,7 @@ from sys import exit
 from vocabulary import *
 from tokenizer import *
 import glob
+import math
 
 """
 Functionality to preprocess MIDI files translated into indices in the event vocabulary from command line
@@ -70,7 +71,7 @@ def sample_data(seqs, lth, factor=6):
     return data
 
 
-def aug(data, note_shifts=None, time_stretches=None, verbose=False):
+def aug(data, note_shifts=None, time_stretches=None, verbose=False, lth=100):
     """
     Augments data up and down in pitch by note_shifts and faster and slower in time by time_stretches. Adds start
     and end tokens and pads to max sequence length in data
@@ -158,9 +159,15 @@ def aug(data, note_shifts=None, time_stretches=None, verbose=False):
 
     # preface and suffix with start and end tokens
     aug_data = []
+    seq_max_len = lth + lth
     for seq in time_stretched_data:
-        aug_data.append(F.pad(F.pad(seq, (1, 0), value=start_token), (0, 1), value=end_token))
+        padded_data = F.pad(F.pad(seq, (1, 0), value=start_token), (0, 1), value=end_token)
+        if padded_data.shape[0] > seq_max_len:
+            print(f"Max Legth Exceeded: {seq_max_len}")
+            continue
+        aug_data.append(padded_data)
 
+    time_stretched_data = []
     # pad all sequences to max length
     aug_data = torch.nn.utils.rnn.pad_sequence(aug_data, padding_value=pad_token).transpose(-1, -2)
     return aug_data
@@ -247,7 +254,7 @@ if __name__ == "__main__":
     if not args.from_augmented_data:
         print("Augmenting data (NOTE: may take even longer)...") if args.verbose else None
         DATA = aug(DATA, note_shifts=args.transpositions, time_stretches=args.time_stretches,
-                   verbose=(args.verbose >= 2))
+                   verbose=(args.verbose >= 2), lth=args.length)
         print("Done!") if args.verbose else None
     
     # shuffle data
