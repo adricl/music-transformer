@@ -7,13 +7,21 @@ import tempfile
 def process_midi(model_, inp, save_path="./bloop.mid", mode="categorical", temperature=1.0, k=None,
              tempo=512820, verbose=False, token_count=None):
     
-    temp = tempfile.TemporaryFile() 
-    temp.write(inp)
+    with tempfile.NamedTemporaryFile(delete=False) as fp:
+        fp.write(inp)
+        fp.close()
+        fp_name = fp.name
+        print("Processing midi file")
+        midi_parser_output = midi_parser(fp.name)
+        tempo = midi_parser_output[2]
+        midi_input = midi_parser_output[1]
+        
+        os.unlink(fp_name)
 
-    midi_parser_output = midi_parser(temp.name) #fix error here
+        print(midi_input)
 
-    generate(model_=model_, inp=midi_parser_output, save_path=save_path,
-             temperature=temperature, mode=mode, k=k, tempo=tempo, verbose=verbose, token_count=token_count)
+        generate(model_=model_, inp=midi_input, save_path=save_path,
+                 temperature=temperature, mode=mode, k=k, tempo=tempo, verbose=verbose, token_count=token_count)
 
 
 
@@ -66,6 +74,7 @@ if __name__ == "__main__":
 
     try:
         os.mkfifo(pipe_name)
+        print("Creating Pipe...")
     except OSError as oe: 
         print(oe)
         if oe.errno != errno.EEXIST:
@@ -73,13 +82,11 @@ if __name__ == "__main__":
     
     try:
         while True:
-            print("Opening FIFO...")
             with open(pipe_name, mode='rb') as fifo:
-                print("Midi opened...")
                 while True:
                     data = fifo.read()
                     if len(data) == 0:
-                        print("Writer closed")
+                        print("Waiting for new data")
                         break
                     else:
                         process_midi(model_=music_transformer, inp=data, save_path=args.save_path,
