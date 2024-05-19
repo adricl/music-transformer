@@ -48,3 +48,14 @@ Epoch 3 Time taken 4233.83 seconds Train Loss 1.1135272768895128 Val Loss 1.0777
 python generate.py model/save.pt test.midi -v -t 1 -k 250 -f "data/adl-piano-midi/Rap/Alternative Hip Hop/Oliver/As Long As She Loves Me.mid" -ft 150 -c
 
 python generate.py model/save.pt test.midi -v -t 1 -k 250 -i "data/adl-piano-midi/Rap/Alternative Hip Hop/Oliver/As Long As She Loves Me.mid" -it 150 -c
+
+
+
+
+
+
+### Installing MidiTok
+
+CXX=/usr/bin/clang++-12 #this is reuqired for the symusic install
+pin install miditok
+
